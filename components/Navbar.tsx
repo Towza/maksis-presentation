@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ViewMode } from '../types';
 
@@ -6,24 +7,34 @@ interface Props {
   setView: (v: ViewMode) => void;
   activeColor: string;
   isOnyx: boolean;
+  onLogoClick?: () => void;
 }
 
-export const Navbar: React.FC<Props> = ({ view, setView, activeColor, isOnyx }) => {
+export const Navbar: React.FC<Props> = ({ view, setView, activeColor, isOnyx, onLogoClick }) => {
   const textColor = isOnyx ? 'text-white' : 'text-black';
   const inactiveTextColor = isOnyx ? 'text-white/30 hover:text-white' : 'text-black/30 hover:text-black';
 
+  const menuItems = [
+    { id: 'story', label: 'Overview' },
+    { id: 'flow', label: 'Network' },
+    { id: 'identity', label: 'Brand' },
+    { id: 'config', label: 'Terminal' }
+  ] as const;
+
   return (
-    <nav className="fixed top-0 left-0 w-full z-[100] h-20 lg:h-24 flex items-center justify-center pointer-events-none">
-      <div className="w-full max-w-7xl px-6 md:px-12 lg:px-20 flex items-center justify-between">
+    <nav className="fixed top-0 left-0 w-full z-[100] h-16 lg:h-24 flex items-center justify-center pointer-events-none px-6 md:px-12 lg:px-20">
+      <div className="w-full max-w-7xl flex items-center justify-between pointer-events-auto">
+        
+        {/* Logo Section - Left Aligned - Link to Start */}
         <div 
-          className="flex items-center gap-3 lg:gap-6 pointer-events-auto cursor-pointer group"
-          onClick={() => setView('story')}
+          className="flex items-center gap-2 lg:gap-4 cursor-pointer group"
+          onClick={onLogoClick ? onLogoClick : () => setView('story')}
+          aria-label="Atpakaļ uz sākumu"
         >
-          {/* Adjusted M coordinate from 5 to 8 to align the round cap perfectly with the x=0 visual edge (since strokeWidth=16 means 8px radius) */}
-          <div className="w-7 h-7 lg:w-10 lg:h-10 flex items-center justify-center transition-all duration-1000 group-hover:rotate-[360deg]">
+          <div className="w-5 h-5 lg:w-10 lg:h-10 flex items-center justify-center transition-all duration-1000 group-hover:rotate-[360deg]">
             <svg viewBox="0 0 100 60" className="w-full h-full overflow-visible">
               <path 
-                d="M8,45 Q25,43 45,35 T95,5" 
+                d="M5,35 Q25,33 45,25 T95,5" 
                 fill="none" 
                 stroke={activeColor} 
                 strokeWidth="16" 
@@ -31,30 +42,44 @@ export const Navbar: React.FC<Props> = ({ view, setView, activeColor, isOnyx }) 
               />
             </svg>
           </div>
-          <h1 className={`text-base lg:text-2xl font-black font-syne tracking-[0.2em] lg:tracking-[0.4em] uppercase ${textColor}`}>MAKSIS</h1>
+          <h1 className={`text-base lg:text-3xl font-black font-syne tracking-tighter uppercase leading-none ${textColor}`}>MAKSIS</h1>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-6 lg:gap-12 pointer-events-auto overflow-x-auto no-scrollbar">
-          {(['story', 'flow', 'identity', 'config'] as const).map((item) => (
+        {/* Desktop Navigation Items */}
+        <div className="hidden lg:flex items-center gap-12">
+          {menuItems.map((item) => (
             <button 
-              key={item}
+              key={item.id}
               onClick={() => {
-                setView(item);
+                setView(item.id);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               className={`
-                whitespace-nowrap text-[8px] lg:text-[10px] font-black uppercase tracking-[0.2em] lg:tracking-[0.5em] transition-all duration-500 relative py-2
-                ${view === item ? textColor : inactiveTextColor}
+                whitespace-nowrap text-[10px] font-black uppercase tracking-[0.5em] transition-all duration-500 relative py-2
+                ${view === item.id ? textColor : inactiveTextColor}
               `}
             >
-              {item === 'story' ? 'Overview' : item === 'flow' ? 'Network' : item === 'identity' ? 'Brand' : 'Terminal'}
+              {item.label}
               <div 
-                className={`absolute bottom-0 left-0 h-0.5 transition-all duration-700 ${view === item ? 'w-full opacity-100' : 'w-0 opacity-0'}`}
+                className={`absolute bottom-0 left-0 h-0.5 transition-all duration-700 ${view === item.id ? 'w-full opacity-100' : 'w-0 opacity-0'}`}
                 style={{ backgroundColor: activeColor }} 
               />
             </button>
           ))}
         </div>
+
+        {/* Mobile Navigation Toggle - Native App Feel */}
+        <button 
+          onClick={() => setView('config')}
+          className="flex lg:hidden items-center gap-2.5 group py-2"
+        >
+           <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${textColor} opacity-30 group-hover:opacity-100 transition-opacity`}>MENU</span>
+           <div className="flex flex-col gap-1 items-end">
+              <div className="w-3.5 h-[1.5px] rounded-full transition-all" style={{ backgroundColor: activeColor }} />
+              <div className="w-2 h-[1.5px] rounded-full transition-all opacity-40" style={{ backgroundColor: activeColor }} />
+           </div>
+        </button>
+
       </div>
     </nav>
   );

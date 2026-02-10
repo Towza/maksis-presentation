@@ -1,7 +1,6 @@
+
 {
-  "name": "MAKSIS | PREZENTACIJA FEBRUARIS 9, 2026 v2",
-  "description": "High-end financial platform powered by Gemini 2.5 Neural Architecture.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
+  "name": "MAKSIS | FINTECH ENGINE",
+  "description": "Maksis Fintech Core Engine: The modular operating system for modern lending. Automate the entire lifecycle: ID verification, instant credit scoring, and debt recovery. Reduce risk with automated PEP/Sanction checks and scale fast with ready-made modules.",
+  "requestFramePermissions": []
 }

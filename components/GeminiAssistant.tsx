@@ -2,10 +2,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 
+const SUGGESTIONS = [
+  "Pastāsti par sistēmas drošību",
+  "Kā darbojas kredītvērtēšana?",
+  "Kādas ir integrācijas iespējas?",
+];
+
 export const GeminiAssistant: React.FC<{ activeColor: string }> = ({ activeColor }) => {
   const [isActive, setIsActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [transcription, setTranscription] = useState('');
+  const [showTooltip, setShowTooltip] = useState(true);
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const outputNodeRef = useRef<GainNode | null>(null);
@@ -46,6 +53,7 @@ export const GeminiAssistant: React.FC<{ activeColor: string }> = ({ activeColor
   const startSession = async () => {
     try {
       setIsConnecting(true);
+      setShowTooltip(false);
       const ai = new GoogleGenAI({ apiKey: (process.env.API_KEY as string) });
       
       const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
@@ -80,7 +88,7 @@ export const GeminiAssistant: React.FC<{ activeColor: string }> = ({ activeColor
           },
           onmessage: async (msg: LiveServerMessage) => {
             if (msg.serverContent?.outputTranscription) {
-              setTranscription(prev => (prev + ' ' + msg.serverContent?.outputTranscription?.text).slice(-100));
+              setTranscription(prev => (prev + ' ' + msg.serverContent?.outputTranscription?.text).slice(-150));
             }
             const audioBase64 = msg.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
             if (audioBase64 && audioContextRef.current) {
@@ -101,13 +109,20 @@ export const GeminiAssistant: React.FC<{ activeColor: string }> = ({ activeColor
               nextStartTimeRef.current = 0;
             }
           },
-          onerror: (e) => console.error('Gemini Error:', e),
-          onclose: () => setIsActive(false),
+          onerror: (e) => {
+            console.error('Gemini Error:', e);
+            setIsActive(false);
+            setIsConnecting(false);
+          },
+          onclose: () => {
+            setIsActive(false);
+            setIsConnecting(false);
+          },
         },
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Puck' } } },
-          systemInstruction: 'You are the Gemini 2.5 assistant for the Maksis platform. Be professional, concise, and helpful.',
+          systemInstruction: 'You are the Gemini 2.5 assistant for the Maksis platform. The user is browsing a high-end fintech presentation. Be professional, slightly futuristic, and concise. If the user asks about specific slides, refer to the banking core, credit scoring, or identity verification modules mentioned in the presentation.',
           outputAudioTranscription: {},
         }
       });
@@ -122,45 +137,103 @@ export const GeminiAssistant: React.FC<{ activeColor: string }> = ({ activeColor
   const stopSession = () => {
     if (sessionRef.current) sessionRef.current.close();
     setIsActive(false);
+    setTranscription('');
   };
 
   return (
-    <div className="fixed bottom-12 left-12 z-[200] flex items-center gap-6">
-      <button 
-        onClick={isActive ? stopSession : startSession}
-        disabled={isConnecting}
-        className={`
-          group relative w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-700 border border-white/10
-          ${isActive ? 'bg-white' : 'bg-white/[0.03] hover:bg-white/[0.08]'}
-          ${isConnecting ? 'animate-pulse' : ''}
-        `}
-      >
-        <div 
-          className="absolute inset-0 rounded-2xl blur-lg opacity-20 group-hover:opacity-40 transition-opacity"
-          style={{ backgroundColor: activeColor }}
-        />
-        {isActive ? (
-          <div className="flex gap-0.5 items-center">
-             {[1,2,3].map(i => (
-               <div key={i} className="w-1 h-3 bg-black rounded-full animate-pulse" style={{ animationDelay: `${i*0.1}s` }} />
-             ))}
-          </div>
-        ) : (
-          <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white/40 group-hover:fill-white transition-colors">
-            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-          </svg>
-        )}
-      </button>
-
+    <div className="fixed bottom-8 left-8 lg:bottom-12 lg:left-12 z-[200] flex flex-col items-start gap-4">
+      {/* Suggestions Chips */}
       {isActive && (
-        <div className="bg-white/[0.03] backdrop-blur-2xl px-5 py-3 rounded-2xl border border-white/5 animate-in slide-in-from-left-4 duration-500">
-           <p className="text-[10px] font-bold text-white/30 uppercase tracking-[0.4em] leading-none mb-2">Live_Transcription</p>
-           <p className="text-[11px] font-medium text-white/60 italic max-w-xs truncate">
-             {transcription || "Listening for command..."}
-           </p>
+        <div className="flex flex-wrap gap-2 max-w-xs animate-in fade-in slide-in-from-bottom-2 duration-700">
+           {SUGGESTIONS.map((text, idx) => (
+             <div 
+               key={idx} 
+               className="px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:border-white/30 cursor-default transition-all"
+             >
+               {text}
+             </div>
+           ))}
         </div>
       )}
+
+      <div className="flex items-center gap-6">
+        <div className="relative">
+          {/* Pulse Effect when Active */}
+          {isActive && (
+            <div 
+              className="absolute inset-0 rounded-2xl animate-ping opacity-20"
+              style={{ backgroundColor: activeColor }}
+            />
+          )}
+          
+          <button 
+            onClick={isActive ? stopSession : startSession}
+            onMouseEnter={() => setShowTooltip(true)}
+            disabled={isConnecting}
+            className={`
+              group relative w-12 h-12 lg:w-14 lg:h-14 rounded-2xl flex items-center justify-center transition-all duration-700 border
+              ${isActive ? 'bg-white border-white' : 'bg-black/40 hover:bg-white/10 border-white/10 backdrop-blur-xl'}
+              ${isConnecting ? 'animate-pulse' : ''}
+            `}
+          >
+            <div 
+              className={`absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-40 transition-opacity duration-700`}
+              style={{ backgroundColor: activeColor }}
+            />
+            
+            {isActive ? (
+              <div className="flex gap-1 items-center h-4">
+                 {[1,2,3,2,1].map((h, i) => (
+                   <div 
+                    key={i} 
+                    className="w-1 bg-black rounded-full animate-voice-bar" 
+                    style={{ 
+                      height: `${h * 20}%`, 
+                      animationDelay: `${i * 0.1}s`,
+                      backgroundColor: 'black'
+                    }} 
+                   />
+                 ))}
+              </div>
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-5 h-5 lg:w-6 lg:h-6 fill-white/40 group-hover:fill-white transition-colors duration-500">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+              </svg>
+            )}
+          </button>
+
+          {/* Initial Tooltip */}
+          {showTooltip && !isActive && !isConnecting && (
+            <div className="absolute left-full ml-4 top-1/2 -translate-y-1/2 px-4 py-2 bg-white rounded-xl whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-500 shadow-2xl">
+               <p className="text-[10px] font-black uppercase tracking-widest text-black">Runā ar MAKSIS AI</p>
+               <div className="absolute right-full top-1/2 -translate-y-1/2 border-[6px] border-transparent border-r-white" />
+            </div>
+          )}
+        </div>
+
+        {isActive && (
+          <div className="bg-white/5 backdrop-blur-3xl px-6 py-4 rounded-[24px] border border-white/10 animate-in slide-in-from-left-4 duration-700 shadow-4xl max-w-md">
+             <div className="flex items-center gap-3 mb-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.4em] leading-none">Live_Response</p>
+             </div>
+             <p className="text-[12px] font-medium text-white/80 italic leading-relaxed">
+               {transcription || "Klausos..."}
+             </p>
+          </div>
+        )}
+      </div>
+
+      <style>{`
+        @keyframes voice-bar {
+          0%, 100% { transform: scaleY(1); }
+          50% { transform: scaleY(2.5); }
+        }
+        .animate-voice-bar {
+          animation: voice-bar 0.6s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 };

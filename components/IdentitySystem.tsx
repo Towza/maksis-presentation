@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { SurfaceMode } from '../types';
 
@@ -290,7 +291,7 @@ export const IdentitySystem: React.FC<{ activeColor: string; surface: SurfaceMod
 
         <footer className="pt-24 border-t border-white/5 opacity-10">
            <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-[10px] font-bold uppercase tracking-[0.4em] text-center md:text-left">
-              <div><p>Revision</p><p>2026.02.09 Stable</p></div>
+              <div><p>Revision</p><p>{new Date().getFullYear()}.02.21 Stable</p></div>
               <div><p>Core Font</p><p>Syne Variable</p></div>
               <div><p>Body Font</p><p>Jakarta Sans</p></div>
               <div><p>Intelligence</p><p>Gemini 2.5 Pro</p></div>
